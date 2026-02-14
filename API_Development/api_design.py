@@ -1,34 +1,34 @@
-# API imports for concurrent calls
+# API imports for concurrent calls and FastAPI service
 import asyncio
 import aiohttp
-import json
+from fastapi import FastAPI
+# Initialize FastAPI app
+app = FastAPI(title="Async API Aggregator")
 
-# Asynchronously fetches data from the url
+# Helper function to fetch data from a single API endpoint asynchronously
 async def fetch_async(session, url):
-    async with session.get(url) as response:
-        if response.status == 200:
-            return url, await response.json()
-        else:
-            print(f"Error fetching {url}: Status code {response.status}")
-            return url, None
-# main for declaring api endpoints for comparison        
-async def main():
-    api_endpoints = {
+    try:
+        async with session.get(url) as response:
+            if response.status == 200:
+                return url, await response.json()
+            return url, {"error": f"Failed to fetch data, status code: {response.status}"}
+    except Exception as e:
+        return url, {"error": str(e)} 
+# Endpoint to aggregate data from multiple APIs concurrently
+@app.get("/aggregate")      
+async def aggregate():
+    # change for readability
+    api_endpoints = [
         "https://official-joke-api.appspot.com/random_joke",
         "https://api.agify.io?name=meelad",
         "https://api.nationalize.io?name=nathaniel"
-    }
-    
-    async with aiohttp.ClientSession() as session:
+    ]
+    # Use aiohttp to make concurrent API calls
+    timeout = aiohttp.ClientTimeout(total=5)  # Set a timeout for the requests
+    async with aiohttp.ClientSession(timeout=timeout) as session:
         tasks = [fetch_async(session, url) for url in api_endpoints]
-        results_list = await asyncio.gather(*tasks)
+        results = await asyncio.gather(*tasks)
 
-        results = dict(results_list)
-        print()
-        print(json.dumps(results, indent=4))
-        print()
-
-if __name__ == "__main__":
-    asyncio.run(main())
-
+        return results
+    
 
