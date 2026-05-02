@@ -43,10 +43,6 @@ API endpoints are defined as structured objects, making it easy to:
 
 ***All API's are public and require no authentication***
 
-## Requirements
-- Python 3.9+
-- aiohttp
-
 ## Example Output
 
 ```
