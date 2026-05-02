@@ -1,19 +1,40 @@
 # Async-API-Aggregator
-A light weight Python project that demonstrates concurrent API requests using asyncio and aiohttp.
-The script fetches data from multiple public API's simultaneously and prints the aggregated JSON response in a readable format.
+A high-performance, asynchronous API aggregation service built with Python and FastAPI. This project demonstrates how to efficiently fetch and unify data from multiple external APIs concurrently while maintaining clean structure, error handling, and extensibility.
 
-## Features
-- Asynchronous HTTP requests with aiohttp
-- Concurrent API calls using asyncio.gather
-- Clean JSON output formatting
-- Simple, extensible structure for adding more API's
+## Overview
+This service queries multiple third-party APIs in parallel and returns a standardized, structured response. It is designed to:
 
-## Purpose
-This project was built to practice and demonstrate:
-- Asynchronous programming in Python
-- Making concurrent external API calls
-- Handling JSON responses
-- Aggregating results into a single output
+- Reduce total latency using asynchronous I/O
+- Provide consistent response formatting across different APIs
+- Gracefully handle failures without breaking the entire request
+- Serve as a scalable foundation for microservice aggregation patterns
+
+## Tech Stack
+- FastAPI – API framework
+- aiohttp – Async HTTP client
+- asyncio – Concurrency management
+- Pydantic – Data validation and schema modeling
+
+## Key Features
+### Concurrent API Requests
+All external API calls are executed in parallel using `asyncio.gather()`, ensuring fast response times.
+### Strutured Response Model
+Each API response is normalized into a consistent schema:
+```
+{
+  "success": true,
+  "data": {...},
+  "error": null,
+  "status_code": 200
+}
+```
+### Fault Tolerance
+Failures in inidividual APIs `not` break the entire aggregation. Each API response is isolated and handled independently.
+### Extensible Design
+API endpoints are defined as structured objects, making it easy to:
+- Add new APIs
+- Introduce authentication
+- Configure per-endpoint settings
 
 ## API's Used
 - Official Joke API – returns a random joke
@@ -30,103 +51,45 @@ This project was built to practice and demonstrate:
 
 ```
 {
-    "https://official-joke-api.appspot.com/random_joke": {
-        "type": "programming",
-        "setup": "Why did the programmer always carry a pencil?",
-        "punchline": "They preferred to write in C#.",
-        "id": 448
+  "joke": {
+    "success": true,
+    "data": {
+      "setup": "Why did the scarecrow win an award?",
+      "punchline": "Because he was outstanding in his field!"
     },
-    "https://api.nationalize.io?name=nathaniel": {
-        "count": 6172,
-        "name": "nathaniel",
-        "country": [
-            {
-                "country_id": "NG",
-                "probability": 0.17632453512718907
-            },
-            {
-                "country_id": "GH",
-                "probability": 0.08304361297013127
-            },
-            {
-                "country_id": "NE",
-                "probability": 0.07164615880444838
-            },
-            {
-                "country_id": "US",
-                "probability": 0.032019319698424385
-            },
-            {
-                "country_id": "ID",
-                "probability": 0.02637540425400123
-            }
-        ]
+    "error": null,
+    "status_code": 200
+  },
+  "agify": {
+    "success": true,
+    "data": {
+      "name": "meelad",
+      "age": 32
     },
-    "https://api.agify.io?name=meelad": {
-        "count": 21,
-        "name": "meelad",
-        "age": 36
-    }
+    "error": null,
+    "status_code": 200
+  },
+  "nationalize": {
+    "success": true,
+    "data": {
+      "name": "nathaniel",
+      "country": []
+    },
+    "error": null,
+    "status_code": 200
+  }
 }
 ```
 
-## Codebase Enhancement
-In recent changes to the codebase, a backend API service was integrated using FastAPI while still applying asynchronous fetches of data within the URLs. aiohttp is still used to make concurrent API calls as well. Try and Except error handling is utilized to ensure success and/or failures while fetching data.
+## How it Works
+1. API endpoints are defined using the `APIEndpoint` model
+2. A shared async HTTP session is created with a timeout
+3. Each API is called concurrently using `fetch_async()`
+4. Results are gathered and converted into a dicionary
+5. The final response is returned using a typed schema
 
-Reference PR https://github.com/Damienb123/Async-API-Aggregator/pull/3 for recent changes to the codebase.
-## Example Output
-### JSON Formatted
-```
-[
-    [
-        "https://official-joke-api.appspot.com/random_joke",
-        {
-            "type": "general",
-            "setup": "I'm reading a book about anti-gravity...",
-            "punchline": "It's impossible to put down",
-            "id": 37
-        }
-    ],
-    [
-        "https://api.agify.io?name=meelad",
-        {
-            "count": 21,
-            "name": "meelad",
-            "age": 36
-        }
-    ],
-    [
-        "https://api.nationalize.io?name=nathaniel",
-        {
-            "count": 6172,
-            "name": "nathaniel",
-            "country": [
-                {
-                    "country_id": "NG",
-                    "probability": 0.17632453512718907
-                },
-                {
-                    "country_id": "GH",
-                    "probability": 0.08304361297013127
-                },
-                {
-                    "country_id": "NE",
-                    "probability": 0.07164615880444838
-                },
-                {
-                    "country_id": "US",
-                    "probability": 0.032019319698424385
-                },
-                {
-                    "country_id": "ID",
-                    "probability": 0.02637540425400123
-                }
-            ]
-        }
-    ]
-]
-```
-### API URL
+
+### API URLs
 ```
 [["https://official-joke-api.appspot.com/random_joke",{"type":"general","setup":"I'm reading a book about anti-gravity...","punchline":"It's impossible to put down","id":37}],["https://api.agify.io?name=meelad",{"count":21,"name":"meelad","age":36}],["https://api.nationalize.io?name=nathaniel",{"count":6172,"name":"nathaniel","country":[{"country_id":"NG","probability":0.17632453512718907},{"country_id":"GH","probability":0.08304361297013127},{"country_id":"NE","probability":0.07164615880444838},{"country_id":"US","probability":0.032019319698424385},{"country_id":"ID","probability":0.02637540425400123}]}]]
 ```
